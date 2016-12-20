@@ -11,9 +11,8 @@ Flow Sim is a web application built on Javascript and Canvas that allows for vis
 - [ ] BONUS: Adjustable airfoil shape
 
 ## Design Docs
-* [Wireframe][wireframe]
+* [Wireframe](https://github.com/jslawjslaw/Flow-Sim/blob/master/docs/Flow_Sim.pdf)
 
-[wireframe]: docs/Flow_Sim
 
 ## Implementation Timeline
 
