@@ -1,0 +1,25 @@
+.header {
+  box-sizing: content-box;
+  margin: 0 auto;
+  height: auto;
+  padding: 10px;
+  text-align: center;
+}
+
+.title {
+  font-family: 'Lobster', cursive;
+  margin: 0;
+  padding: 0;
+}
+
+.canvas {
+  box-sizing: content-box;
+  margin: 0 auto;
+  height: auto;
+  padding: 10px;
+  text-align: center;
+}
+
+.root {
+  border: 1px solid black;
+}
