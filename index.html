@@ -19,8 +19,26 @@
      <canvas id="canvas" class="root"></canvas>
    </div>
 
-   <input type="range" id="input-range" min="-10" max="10" step="0.1" value="0"/>
-   <span id="range-value">0</span>
-   <button id="animate">Run Animation</button>
+   <input type="range" id="angleSlider" min="-10" max="10" step="0.1" value="0"/>
+   <span id="angleValue">0</span>
+
+   <input type="range" id="stepSlider" min="1" max="40" step="1" value="20" />
+   <span id="stepValue">20</span>
+
+   <input type="range" id="speedSlider" min="0" max="0.12" step="0.005" value="0.06" />
+   <span id="speedValue">0.06</span>
+
+   <input type="range" id="viscSlider" min="0.005" max="0.2" step="0.005" value="0.02" />
+   <span id="viscValue">0.02</span>
+
+   <input type="range" id="contrastSlider" min="-10" max="10" step="1" value="0" />
+   <span id="contrastValue">0</span>
+
+   <div class="">
+     Show Tracers
+     <input type="checkbox" id="tracerCheck" />
+   </div>
+
+   <button id="animate">Run</button>
  </body>
 </html>

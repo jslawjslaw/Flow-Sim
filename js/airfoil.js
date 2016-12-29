@@ -12,17 +12,15 @@ export default class Airfoil {
     let x_sum = 0;
     let y_sum = 0;
     this.coords = NACA2412.map( (point) => {
-      let p = multiply(rotation(Math.PI), point);
-      const x_coor = 300*(p[0])+400;
-      const y_coor = 300*(p[1])+250;
+      const x_coor = 150*(point[0]+1)-70;
+      const y_coor = 150*(point[1]+1);
       x_sum += x_coor;
       y_sum += y_coor;
 
-      return [ x_coor, y_coor ];
+      return [x_coor, y_coor];
     });
 
     this.centroid = [ x_sum/(this.coords.length), y_sum/(this.coords.length) ];
-
     this.coords = subtract(this.coords, this.centroid);
     this.coords = this.coords.map( (point) => {
       return multiply(rotation(this.aAttack), point);
@@ -31,21 +29,7 @@ export default class Airfoil {
     this.coords = add(this.coords, this.centroid);
   }
 
-  draw() {
-    this.calcCoords();
-    this.ctx.beginPath();
-    this.ctx.fillStyle = 'black';
-    this.ctx.moveTo(this.coords[0][0], this.coords[0][1]);
-    for(let i = 1; i < this.coords.length; i++) {
-      this.ctx.lineTo(this.coords[i][0], this.coords[i][1]);
-    }
-    this.ctx.fill();
-    this.ctx.closePath();
-  }
-
   updateAngle(aAttack) {
-    this.ctx.clearRect(0, 0, 500, 500);
     this.aAttack = degToRads(aAttack);
-    this.draw();
   }
 }
