@@ -55,18 +55,18 @@
 	$(function () {
 	  var canvas = $("#canvas")[0];
 	  var angle = $("#range")[0];
-	
-	  canvas.width = 300;
-	  canvas.height = 300;
+	  canvas.width = 500;
+	  canvas.height = 200;
 	  window.stepCount = 0;
 	  window.startTime = 0;
-	  window.speed = Number($("#speedValue").text());
+	  window.speed = Number($("#speedValue").val());
 	  window.steps = 20;
 	  window.viscosity = 0.02;
 	  window.contrast = 0;
 	  window.time = 0;
 	  window.running = false;
 	  window.pxPerSquare = 1;
+	  window.shape = 1;
 	
 	  var ctx = canvas.getContext("2d");
 	  var image = ctx.createImageData(canvas.width, canvas.height); // faster than clearRect
@@ -97,6 +97,9 @@
 	  $("#tracerCheck").change(function (e) {
 	    return initTracers(e, mesh);
 	  });
+	  $(".shape").click(function (e) {
+	    return selectShape(e, mesh);
+	  });
 	});
 	
 	function animate(mesh) {
@@ -106,24 +109,33 @@
 	    reset();
 	    simulate(mesh);
 	  } else {
-	    $("#animate").html("Run");
+	    $("#animate").html("Run Simulation");
 	  }
 	}
 	
 	function updateAngle(e, mesh) {
-	  $("#angleValue").html(e.currentTarget.value);
+	  $("#angleValue").val(e.currentTarget.value);
 	  mesh.airfoil.updateAngle(parseInt(e.currentTarget.value));
 	  mesh.updateBarrier();
 	  mesh.paintCanvas();
 	}
 	
+	function selectShape(e, mesh) {
+	  $("#" + window.shape).removeClass("selectedShape");
+	  window.shape = Number(e.currentTarget.id);
+	  $("#" + e.currentTarget.id).addClass("selectedShape"); // change css here
+	  mesh.airfoil.changeShape();
+	  mesh.updateBarrier();
+	  mesh.paintCanvas();
+	}
+	
 	function adjustSpeed(e) {
-	  $("#speedValue").html(e.currentTarget.value);
+	  $("#speedValue").val(e.currentTarget.value);
 	  window.speed = e.currentTarget.value;
 	}
 	
 	function adjustViscosity(e) {
-	  $("#viscValue").html(e.currentTarget.value);
+	  $("#viscValue").val(e.currentTarget.value);
 	  window.viscosity = Number(e.currentTarget.value);
 	}
 	
@@ -133,13 +145,13 @@
 	}
 	
 	function resetTimer(e) {
-	  $("#stepValue").html(e.currentTarget.value);
+	  $("#stepValue").val(e.currentTarget.value);
 	  window.steps = Number(e.currentTarget.value);
 	  reset();
 	}
 	
 	function adjustContrast(e, mesh) {
-	  $("#contrastValue").html(e.currentTarget.value);
+	  $("#contrastValue").val(e.currentTarget.value);
 	  window.contrast = Number(e.currentTarget.value);
 	  mesh.paintCanvas();
 	}
@@ -202,7 +214,7 @@
 /* 1 */
 /***/ function(module, exports, __webpack_require__) {
 
-	"use strict";
+	'use strict';
 	
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
@@ -214,14 +226,14 @@
 	
 	var _airfoil2 = _interopRequireDefault(_airfoil);
 	
+	var _selectors = __webpack_require__(8);
+	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
 	var Mesh = function () {
 	  function Mesh(ctx, xdim, ydim, image) {
-	    var _this = this;
-	
 	    _classCallCheck(this, Mesh);
 	
 	    this.ctx = ctx;
@@ -246,17 +258,24 @@
 	    this.curl = new Array(xdim * ydim);
 	    this.barrier = new Array(xdim * ydim); // boolean array of barrier locations
 	
-	    // Initialize to a steady rightward flow with no barriers:
-	    for (var _y = 0; _y < ydim; _y++) {
-	      for (var _x = 0; _x < xdim; _x++) {
-	        this.barrier[_x + _y * xdim] = false;
+	    // Initialize airfoil and generate barrier points:
+	    this.airfoil = new _airfoil2.default(ctx, 0);
+	    this.airfoil.calcCoords();
+	    for (var y = 0; y < ydim; y++) {
+	      for (var x = 0; x < xdim; x++) {
+	        if ((0, _selectors.pointInPolygon)(x, y, this.airfoil.coords)) {
+	          this.barrier[x + y * xdim] = true;
+	        } else {
+	          this.barrier[x + y * xdim] = false;
+	        }
 	      }
 	    }
+	
 	    // Initialize array of partially transparant blacks, for drawing flow lines:
 	    var transBlackArraySize = 50;
 	    this.transBlackArray = new Array(transBlackArraySize);
-	    for (var _i = 0; _i < transBlackArraySize; _i++) {
-	      this.transBlackArray[_i] = "rgba(0,0,0," + Number(_i / transBlackArraySize).toFixed(2) + ")";
+	    for (var i = 0; i < transBlackArraySize; i++) {
+	      this.transBlackArray[i] = "rgba(0,0,0," + Number(i / transBlackArraySize).toFixed(2) + ")";
 	    }
 	
 	    // Initialize tracers (but don't place them yet):
@@ -267,27 +286,12 @@
 	      this.tracerX[t] = 0.0;this.tracerY[t] = 0.0;
 	    }
 	
-	    // Initialize airfoil and generate barrier points:
-	    this.airfoil = new _airfoil2.default(ctx, 0);
-	    this.airfoil.calcCoords();
-	    var x = void 0,
-	        y = void 0,
-	        i = void 0;
-	    this.airfoil.coords.forEach(function (coord) {
-	      x = Math.floor(coord[0]);
-	      y = Math.floor(coord[1]);
-	      i = x + y * xdim;
-	      _this.barrier[i] = true;
-	    });
-	
-	    this.barrier[Math.floor(this.airfoil.centroid[0]) + Math.floor(this.airfoil.centroid[1]) * xdim] = true;
-	
 	    this.setColors();
 	    this.initFluid();
 	  }
 	
 	  _createClass(Mesh, [{
-	    key: "colorSquare",
+	    key: 'colorSquare',
 	    value: function colorSquare(x, y, r, g, b) {
 	      var fy = this.ydim - y - 1;
 	      var index = void 0;
@@ -301,31 +305,21 @@
 	      }
 	    }
 	  }, {
-	    key: "updateBarrier",
+	    key: 'updateBarrier',
 	    value: function updateBarrier() {
-	      var _this2 = this;
-	
-	      for (var _y2 = 0; _y2 < this.ydim; _y2++) {
-	        for (var _x2 = 0; _x2 < this.xdim; _x2++) {
-	          this.barrier[_x2 + _y2 * this.xdim] = false;
+	      this.airfoil.calcCoords();
+	      for (var y = 0; y < this.ydim; y++) {
+	        for (var x = 0; x < this.xdim; x++) {
+	          if ((0, _selectors.pointInPolygon)(x, y, this.airfoil.coords)) {
+	            this.barrier[x + y * this.xdim] = true;
+	          } else {
+	            this.barrier[x + y * this.xdim] = false;
+	          }
 	        }
 	      }
-	
-	      this.airfoil.calcCoords();
-	      var x = void 0,
-	          y = void 0,
-	          i = void 0;
-	      this.airfoil.coords.forEach(function (coord) {
-	        x = Math.floor(coord[0]);
-	        y = Math.floor(coord[1]);
-	        i = x + y * _this2.xdim;
-	        _this2.barrier[i] = true;
-	      });
-	
-	      this.barrier[Math.floor(this.airfoil.centroid[0]) + Math.floor(this.airfoil.centroid[1]) * this.xdim] = true;
 	    }
 	  }, {
-	    key: "setColors",
+	    key: 'setColors',
 	    value: function setColors() {
 	      // Set up the array of colors for plotting (mimicks matplotlib "jet" colormap):
 	      // (Kludge: Index nColors+1 labels the color used for drawing barriers.)
@@ -351,7 +345,7 @@
 	      this.redList[nColors + 1] = 0;this.greenList[nColors + 1] = 0;this.blueList[nColors + 1] = 0; // barriers are black
 	    }
 	  }, {
-	    key: "initFluid",
+	    key: 'initFluid',
 	    value: function initFluid() {
 	      var u0 = Number(window.speed);
 	      for (var y = 0; y < this.ydim; y++) {
@@ -363,7 +357,7 @@
 	      this.paintCanvas();
 	    }
 	  }, {
-	    key: "paintCanvas",
+	    key: 'paintCanvas',
 	    value: function paintCanvas() {
 	      var cIndex = 0;
 	      var contrast = Math.pow(1.2, Number(window.contrast));
@@ -391,7 +385,7 @@
 	    // Compute the curl (actually times 2) of the macroscopic velocity field, for plotting:
 	
 	  }, {
-	    key: "computeCurl",
+	    key: 'computeCurl',
 	    value: function computeCurl() {
 	      for (var y = 1; y < this.ydim - 1; y++) {
 	        // interior sites only; leave edges set to zero
@@ -401,7 +395,7 @@
 	      }
 	    }
 	  }, {
-	    key: "setEquil",
+	    key: 'setEquil',
 	    value: function setEquil(x, y, newux, newuy, newrho) {
 	      var i = x + y * this.xdim;
 	      if (typeof newrho == 'undefined') {
@@ -428,7 +422,7 @@
 	      this.uy[i] = newuy;
 	    }
 	  }, {
-	    key: "setBoundaries",
+	    key: 'setBoundaries',
 	    value: function setBoundaries() {
 	      var u0 = Number(window.speed);
 	
@@ -443,7 +437,7 @@
 	      }
 	    }
 	  }, {
-	    key: "collide",
+	    key: 'collide',
 	    value: function collide() {
 	      var viscosity = window.viscosity; // kinematic viscosity coefficient in natural units
 	      var omega = 1 / (3 * viscosity + 0.5); // reciprocal of relaxation time
@@ -487,17 +481,17 @@
 	        }
 	      }
 	
-	      for (var _y3 = 1; _y3 < this.ydim - 2; _y3++) {
-	        this.nW[this.xdim - 1 + _y3 * this.xdim] = this.nW[this.xdim - 2 + _y3 * this.xdim]; // at right end, copy left-flowing densities from next row to the left
-	        this.nNW[this.xdim - 1 + _y3 * this.xdim] = this.nNW[this.xdim - 2 + _y3 * this.xdim];
-	        this.nSW[this.xdim - 1 + _y3 * this.xdim] = this.nSW[this.xdim - 2 + _y3 * this.xdim];
+	      for (var _y = 1; _y < this.ydim - 2; _y++) {
+	        this.nW[this.xdim - 1 + _y * this.xdim] = this.nW[this.xdim - 2 + _y * this.xdim]; // at right end, copy left-flowing densities from next row to the left
+	        this.nNW[this.xdim - 1 + _y * this.xdim] = this.nNW[this.xdim - 2 + _y * this.xdim];
+	        this.nSW[this.xdim - 1 + _y * this.xdim] = this.nSW[this.xdim - 2 + _y * this.xdim];
 	      }
 	    }
 	
 	    // Move particles along their directions of motion:
 	
 	  }, {
-	    key: "stream",
+	    key: 'stream',
 	    value: function stream() {
 	      for (var y = this.ydim - 2; y > 0; y--) {
 	        // first start in NW corner...
@@ -506,47 +500,47 @@
 	          this.nNW[x + y * this.xdim] = this.nNW[x + 1 + (y - 1) * this.xdim]; // and the northwest-moving particles
 	        }
 	      }
-	      for (var _y4 = this.ydim - 2; _y4 > 0; _y4--) {
+	      for (var _y2 = this.ydim - 2; _y2 > 0; _y2--) {
 	        // now start in NE corner...
-	        for (var _x3 = this.xdim - 2; _x3 > 0; _x3--) {
-	          this.nE[_x3 + _y4 * this.xdim] = this.nE[_x3 - 1 + _y4 * this.xdim]; // move the east-moving particles
-	          this.nNE[_x3 + _y4 * this.xdim] = this.nNE[_x3 - 1 + (_y4 - 1) * this.xdim]; // and the northeast-moving particles
+	        for (var _x = this.xdim - 2; _x > 0; _x--) {
+	          this.nE[_x + _y2 * this.xdim] = this.nE[_x - 1 + _y2 * this.xdim]; // move the east-moving particles
+	          this.nNE[_x + _y2 * this.xdim] = this.nNE[_x - 1 + (_y2 - 1) * this.xdim]; // and the northeast-moving particles
 	        }
 	      }
-	      for (var _y5 = 1; _y5 < this.ydim - 1; _y5++) {
+	      for (var _y3 = 1; _y3 < this.ydim - 1; _y3++) {
 	        // now start in SE corner...
-	        for (var _x4 = this.xdim - 2; _x4 > 0; _x4--) {
-	          this.nS[_x4 + _y5 * this.xdim] = this.nS[_x4 + (_y5 + 1) * this.xdim]; // move the south-moving particles
-	          this.nSE[_x4 + _y5 * this.xdim] = this.nSE[_x4 - 1 + (_y5 + 1) * this.xdim]; // and the southeast-moving particles
+	        for (var _x2 = this.xdim - 2; _x2 > 0; _x2--) {
+	          this.nS[_x2 + _y3 * this.xdim] = this.nS[_x2 + (_y3 + 1) * this.xdim]; // move the south-moving particles
+	          this.nSE[_x2 + _y3 * this.xdim] = this.nSE[_x2 - 1 + (_y3 + 1) * this.xdim]; // and the southeast-moving particles
 	        }
 	      }
-	      for (var _y6 = 1; _y6 < this.ydim - 1; _y6++) {
+	      for (var _y4 = 1; _y4 < this.ydim - 1; _y4++) {
 	        // now start in the SW corner...
-	        for (var _x5 = 1; _x5 < this.xdim - 1; _x5++) {
-	          this.nW[_x5 + _y6 * this.xdim] = this.nW[_x5 + 1 + _y6 * this.xdim]; // move the west-moving particles
-	          this.nSW[_x5 + _y6 * this.xdim] = this.nSW[_x5 + 1 + (_y6 + 1) * this.xdim]; // and the southwest-moving particles
+	        for (var _x3 = 1; _x3 < this.xdim - 1; _x3++) {
+	          this.nW[_x3 + _y4 * this.xdim] = this.nW[_x3 + 1 + _y4 * this.xdim]; // move the west-moving particles
+	          this.nSW[_x3 + _y4 * this.xdim] = this.nSW[_x3 + 1 + (_y4 + 1) * this.xdim]; // and the southwest-moving particles
 	        }
 	      }
 	      var index = void 0;
-	      for (var _y7 = 1; _y7 < this.ydim - 1; _y7++) {
+	      for (var _y5 = 1; _y5 < this.ydim - 1; _y5++) {
 	        // Now handle bounce-back from barriers
-	        for (var _x6 = 1; _x6 < this.xdim - 1; _x6++) {
-	          if (this.barrier[_x6 + _y7 * this.xdim]) {
-	            index = _x6 + _y7 * this.xdim;
-	            this.nE[_x6 + 1 + _y7 * this.xdim] = this.nW[index];
-	            this.nW[_x6 - 1 + _y7 * this.xdim] = this.nE[index];
-	            this.nN[_x6 + (_y7 + 1) * this.xdim] = this.nS[index];
-	            this.nS[_x6 + (_y7 - 1) * this.xdim] = this.nN[index];
-	            this.nNE[_x6 + 1 + (_y7 + 1) * this.xdim] = this.nSW[index];
-	            this.nNW[_x6 - 1 + (_y7 + 1) * this.xdim] = this.nSE[index];
-	            this.nSE[_x6 + 1 + (_y7 - 1) * this.xdim] = this.nNW[index];
-	            this.nSW[_x6 - 1 + (_y7 - 1) * this.xdim] = this.nNE[index];
+	        for (var _x4 = 1; _x4 < this.xdim - 1; _x4++) {
+	          if (this.barrier[_x4 + _y5 * this.xdim]) {
+	            index = _x4 + _y5 * this.xdim;
+	            this.nE[_x4 + 1 + _y5 * this.xdim] = this.nW[index];
+	            this.nW[_x4 - 1 + _y5 * this.xdim] = this.nE[index];
+	            this.nN[_x4 + (_y5 + 1) * this.xdim] = this.nS[index];
+	            this.nS[_x4 + (_y5 - 1) * this.xdim] = this.nN[index];
+	            this.nNE[_x4 + 1 + (_y5 + 1) * this.xdim] = this.nSW[index];
+	            this.nNW[_x4 - 1 + (_y5 + 1) * this.xdim] = this.nSE[index];
+	            this.nSE[_x4 + 1 + (_y5 - 1) * this.xdim] = this.nNW[index];
+	            this.nSW[_x4 - 1 + (_y5 - 1) * this.xdim] = this.nNE[index];
 	          }
 	        }
 	      }
 	    }
 	  }, {
-	    key: "moveTracers",
+	    key: 'moveTracers',
 	    value: function moveTracers() {
 	      var roundedX = void 0,
 	          roundedY = void 0,
@@ -567,7 +561,7 @@
 	    // Draw the tracer particles:
 	
 	  }, {
-	    key: "drawTracers",
+	    key: 'drawTracers',
 	    value: function drawTracers() {
 	      this.ctx.fillStyle = "rgb(150,150,150)";
 	      for (var t = 0; t < this.nTracers; t++) {
@@ -576,30 +570,10 @@
 	        this.ctx.fillRect(canvasX - 1, canvasY - 1, 2, 2);
 	      }
 	    }
-	  }, {
-	    key: "pointInPolygon",
-	    value: function pointInPolygon(x, y, polygon) {
-	      var inside = false;
-	      for (var i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-	        var xi = polygon[i][0],
-	            yi = polygon[i][1];
-	        var xj = polygon[j][0],
-	            yj = polygon[j][1];
-	
-	        var intersect = yi > y != yj > y && x < (xj - xi) * (y - yi) / (yj - yi) + xi;
-	        if (intersect) inside = !inside;
-	      }
-	
-	      return inside;
-	    }
 	  }]);
 	
 	  return Mesh;
 	}();
-	
-	// bounds: [0, 200], [0,400]
-	// [500, 200], [500, 400]
-	
 	
 	exports.default = Mesh;
 
@@ -623,7 +597,15 @@
 	
 	var _NACA4 = _interopRequireDefault(_NACA3);
 	
-	var _math = __webpack_require__(5);
+	var _NACA5 = __webpack_require__(5);
+	
+	var _NACA6 = _interopRequireDefault(_NACA5);
+	
+	var _vertical_plate = __webpack_require__(6);
+	
+	var _vertical_plate2 = _interopRequireDefault(_vertical_plate);
+	
+	var _math = __webpack_require__(7);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -637,6 +619,7 @@
 	
 	    this.ctx = ctx;
 	    this.aAttack = (0, _math.degToRads)(aAttack);
+	    this.shape = _vertical_plate2.default;
 	  }
 	
 	  _createClass(Airfoil, [{
@@ -646,9 +629,9 @@
 	
 	      var x_sum = 0;
 	      var y_sum = 0;
-	      this.coords = _NACA2.default.map(function (point) {
-	        var x_coor = 150 * (point[0] + 1) - 70;
-	        var y_coor = 150 * (point[1] + 1);
+	      this.coords = this.shape.map(function (point) {
+	        var x_coor = Math.round(150 * (point[0] + 1) - 70);
+	        var y_coor = Math.round(150 * (point[1] + 1) - 50);
 	        x_sum += x_coor;
 	        y_sum += y_coor;
 	
@@ -668,6 +651,27 @@
 	    value: function updateAngle(aAttack) {
 	      this.aAttack = (0, _math.degToRads)(aAttack);
 	    }
+	  }, {
+	    key: 'changeShape',
+	    value: function changeShape() {
+	      switch (window.shape) {
+	        case 1:
+	          this.shape = _vertical_plate2.default;
+	          break;
+	        case 2:
+	          this.shape = _NACA2.default;
+	          break;
+	        case 3:
+	          this.shape = _NACA4.default;
+	          break;
+	        case 4:
+	          this.shape = _NACA6.default;
+	          break;
+	        default:
+	          this.shape = _vertical_plate2.default;
+	          break;
+	      }
+	    }
 	  }]);
 	
 	  return Airfoil;
@@ -681,12 +685,22 @@
 
 	"use strict";
 	
+	var NACA0008 = [[1.0000, 0.00084], [0.9500, 0.00537], [0.9000, 0.00965], [0.8000, 0.01749], [0.7000, 0.02443], [0.6000, 0.03043], [0.5000, 0.03529], [0.4000, 0.03869], [0.3000, 0.04001], [0.2500, 0.03961], [0.2000, 0.03825], [0.1500, 0.03564], [0.1000, 0.03121], [0.0750, 0.02800], [0.0500, 0.02369], [0.0250, 0.01743], [0.0125, 0.01263], [0.0000, 0.00000], [0.0125, -0.01263], [0.0250, -0.01743], [0.0500, -0.02369], [0.0750, -0.02800], [0.1000, -0.03121], [0.1500, -0.03564], [0.2000, -0.03825], [0.2500, -0.03961], [0.3000, -0.04001], [0.4000, -0.03869], [0.5000, -0.03529], [0.6000, -0.03043], [0.7000, -0.02443], [0.8000, -0.01749], [0.9000, -0.00965], [0.9500, -0.00537], [1.0000, -0.00084]];
+	
+	module.exports = NACA0008;
+
+/***/ },
+/* 4 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
 	var NACA2412 = [[1.0000, 0.0013], [0.9500, 0.0114], [0.9000, 0.0208], [0.8000, 0.0375], [0.7000, 0.0518], [0.6000, 0.0636], [0.5000, 0.0724], [0.4000, 0.0780], [0.3000, 0.0788], [0.2500, 0.0767], [0.2000, 0.0726], [0.1500, 0.0661], [0.1000, 0.0563], [0.0750, 0.0496], [0.0500, 0.0413], [0.0250, 0.0299], [0.0125, 0.0215], [0.0000, 0.0000], [0.0125, -0.0165], [0.0250, -0.0227], [0.0500, -0.0301], [0.0750, -0.0346], [0.1000, -0.0375], [0.1500, -0.0410], [0.2000, -0.0423], [0.2500, -0.0422], [0.3000, -0.0412], [0.4000, -0.0380], [0.5000, -0.0334], [0.6000, -0.0276], [0.7000, -0.0214], [0.8000, -0.0150], [0.9000, -0.0082], [0.9500, -0.0048], [1.0000, -0.0013]];
 	
 	module.exports = NACA2412;
 
 /***/ },
-/* 4 */
+/* 5 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -696,7 +710,17 @@
 	module.exports = NACA6409;
 
 /***/ },
-/* 5 */
+/* 6 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	var plate = [[0.0, 0.0], [0.0, 0.1], [0.01, 0.1], [0.01, -0.1], [0.0, -0.1]];
+	
+	module.exports = plate;
+
+/***/ },
+/* 7 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -743,7 +767,7 @@
 	function add(A, B) {
 	  var out = [];
 	  for (var i = 0; i < A.length; i++) {
-	    out.push([A[i][0] + B[0], A[i][1] + B[1]]);
+	    out.push([Math.round(A[i][0] + B[0]), Math.round(A[i][1] + B[1])]);
 	  }
 	
 	  return out;
@@ -758,6 +782,32 @@
 	exports.subtract = subtract;
 	exports.add = add;
 	exports.degToRads = degToRads;
+
+/***/ },
+/* 8 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	function pointInPolygon(x, y, polygon) {
+	  var inside = false;
+	  for (var i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+	    var xi = polygon[i][0],
+	        yi = polygon[i][1];
+	    var xj = polygon[j][0],
+	        yj = polygon[j][1];
+	
+	    var intersect = yi > y != yj > y && x < (xj - xi) * (y - yi) / (yj - yi) + xi;
+	    if (intersect) inside = !inside;
+	  }
+	
+	  return inside;
+	}
+	
+	exports.pointInPolygon = pointInPolygon;
 
 /***/ }
 /******/ ]);

@@ -3,18 +3,18 @@ import Mesh from './mesh';
 $( () => {
   const canvas = $("#canvas")[0];
   const angle = $("#range")[0];
-
-  canvas.width = 300;
-  canvas.height = 300;
+  canvas.width = 500;
+  canvas.height = 200;
   window.stepCount = 0;
   window.startTime = 0;
-  window.speed = Number($("#speedValue").text());
+  window.speed = Number($("#speedValue").val());
   window.steps = 20;
   window.viscosity = 0.02;
   window.contrast = 0;
   window.time = 0;
   window.running = false;
   window.pxPerSquare = 1;
+  window.shape = 1;
 
   const ctx = canvas.getContext("2d");
   const image = ctx.createImageData(canvas.width, canvas.height);	// faster than clearRect
@@ -31,6 +31,7 @@ $( () => {
   $("#viscSlider").change((e) => adjustViscosity(e));
   $("#contrastSlider").change((e) => adjustContrast(e, mesh));
   $("#tracerCheck").change((e) => initTracers(e, mesh));
+  $(".shape").click((e) => selectShape(e, mesh));
 });
 
 function animate(mesh) {
@@ -40,24 +41,33 @@ function animate(mesh) {
     reset();
     simulate(mesh);
   } else {
-    $("#animate").html("Run");
+    $("#animate").html("Run Simulation");
   }
 }
 
 function updateAngle(e, mesh) {
-  $("#angleValue").html(e.currentTarget.value);
+  $("#angleValue").val(e.currentTarget.value);
   mesh.airfoil.updateAngle(parseInt(e.currentTarget.value));
   mesh.updateBarrier();
   mesh.paintCanvas();
 }
 
+function selectShape(e, mesh) {
+  $(`#${window.shape}`).removeClass("selectedShape")
+  window.shape = Number(e.currentTarget.id);
+  $(`#${e.currentTarget.id}`).addClass("selectedShape"); // change css here
+  mesh.airfoil.changeShape();
+  mesh.updateBarrier();
+  mesh.paintCanvas();
+}
+
 function adjustSpeed(e) {
-  $("#speedValue").html(e.currentTarget.value);
+  $("#speedValue").val(e.currentTarget.value);
   window.speed = e.currentTarget.value;
 }
 
 function adjustViscosity(e) {
-  $("#viscValue").html(e.currentTarget.value);
+  $("#viscValue").val(e.currentTarget.value);
   window.viscosity = Number(e.currentTarget.value);
 }
 
@@ -67,13 +77,13 @@ function reset() {
 }
 
 function resetTimer(e) {
-  $("#stepValue").html(e.currentTarget.value);
+  $("#stepValue").val(e.currentTarget.value);
   window.steps = Number(e.currentTarget.value);
   reset();
 }
 
 function adjustContrast(e, mesh) {
-  $("#contrastValue").html(e.currentTarget.value);
+  $("#contrastValue").val(e.currentTarget.value);
   window.contrast = Number(e.currentTarget.value);
   mesh.paintCanvas();
 }

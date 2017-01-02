@@ -6,12 +6,13 @@
 
   <link rel="stylesheet" type="text/css" href="./css/styling.css">
   <link href="https://fonts.googleapis.com/css?family=Lobster" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
 
   <script type="text/javascript" src="https://ajax.microsoft.com/ajax/jQuery/jquery-1.4.2.min.js"></script>
   <script src="./js/bundle.js"></script>
  </head>
 
- <body>
+ <body class="container">
    <div class="header">
      <h1 class="title">Flow Sim</h1>
    </div>
@@ -19,26 +20,87 @@
      <canvas id="canvas" class="root"></canvas>
    </div>
 
-   <input type="range" id="angleSlider" min="-10" max="10" step="0.1" value="0"/>
-   <span id="angleValue">0</span>
+   <div class="controls-container">
+     <div class="flow-controls">
+       <h2 class="control-header">Flow Controls</h2>
+       <div class="label-box">
+          <label for="stepSlider" class="control-label">Steps</label>
+       </div>
+       <input type="range" class="flow-control-slider" id="stepSlider" min="1" max="40" step="1" value="20" />
+       <div class="value-container">
+          <input type="text" class="flow-control-value" id="stepValue" value="20" disabled/>
+       </div>
+       <br>
 
-   <input type="range" id="stepSlider" min="1" max="40" step="1" value="20" />
-   <span id="stepValue">20</span>
+       <div class="label-box">
+         <label for="speedSlider" class="control-label">Flow Velocity</label>
+       </div>
+       <input type="range" class="flow-control-slider" id="speedSlider" min="0" max="0.12" step="0.005" value="0.06" />
+       <div class="value-container">
+         <input type="text" class="flow-control-value" id="speedValue" value="0.06" disabled/>
+       </div>
+       <br>
 
-   <input type="range" id="speedSlider" min="0" max="0.12" step="0.005" value="0.06" />
-   <span id="speedValue">0.06</span>
+       <div class="label-box">
+         <label for="viscSlider" class="control-label">Viscosity</label>
+       </div>
+       <input type="range" class="flow-control-slider" id="viscSlider" min="0.005" max="0.2" step="0.005" value="0.02" />
+       <div class="value-container">
+         <input type="text" class="flow-control-value" id="viscValue" value="0.02" disabled/>
+       </div>
+       <br>
 
-   <input type="range" id="viscSlider" min="0.005" max="0.2" step="0.005" value="0.02" />
-   <span id="viscValue">0.02</span>
+       <div class="label-box">
+         <label for="contrastSlider" class="control-label">Contrast</label>
+       </div>
+       <input type="range" class="flow-control-slider" id="contrastSlider" min="-10" max="10" step="1" value="0" />
+       <div class="value-container">
+         <input type="text" class="flow-control-value" id="contrastValue" value="0" disabled/>
+       </div>
 
-   <input type="range" id="contrastSlider" min="-10" max="10" step="1" value="0" />
-   <span id="contrastValue">0</span>
+       <div class="tracer-box">
+         <div class="label-box">
+           <label class="control-label">Show Tracers</label>
+         </div>
+         <input type="checkbox" id="tracerCheck" class="tracer-check" />
+       </div>
+     </div>
 
-   <div class="">
-     Show Tracers
-     <input type="checkbox" id="tracerCheck" />
+     <div class="flow-controls">
+       <h2 class="control-header">Shape Controls</h2>
+       <div class="label-box">
+         <label for="angleSlider" class="control-label">Angle</label>
+       </div>
+       <input type="range" class="flow-control-slider" id="angleSlider" min="-10" max="10" step="0.1" value="0"/>
+       <div class="value-container">
+         <input type="text" class="flow-control-value" id="angleValue" value="0" disabled/>
+       </div>
+
+       <div class="label-box">
+         <label for="angleSlider" class="control-label">Shape</label>
+       </div>
+       <div class="shapes-container">
+         <div id="1" class="shape selectedShape">
+           Vertical Plate
+         </div>
+
+         <div id="2" class="shape">
+           NACA 0008
+         </div>
+
+         <div id="3" class="shape">
+           NACA 2412
+         </div>
+
+         <div id="4" class="shape">
+           NACA 6409
+         </div>
+       </div>
+     </div>
    </div>
 
-   <button id="animate">Run</button>
+   <div class="button-row">
+     <button id="animate" class="button">Run Simulation</button>
+   </div>
  </body>
 </html>

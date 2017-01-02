@@ -1,4 +1,5 @@
 import Airfoil from './airfoil';
+import { pointInPolygon } from './selectors';
 
 export default class Mesh {
   constructor(ctx, xdim, ydim, image) {
@@ -24,12 +25,19 @@ export default class Mesh {
     this.curl = new Array(xdim*ydim);
     this.barrier = new Array(xdim*ydim);		// boolean array of barrier locations
 
-    // Initialize to a steady rightward flow with no barriers:
+    // Initialize airfoil and generate barrier points:
+    this.airfoil = new Airfoil(ctx, 0)
+    this.airfoil.calcCoords();
     for (let y = 0; y < ydim; y++) {
       for (let x = 0; x < xdim; x++) {
-        this.barrier[x+y*xdim] = false;
+        if(pointInPolygon(x, y, this.airfoil.coords)) {
+          this.barrier[x+y*xdim] = true;
+        } else {
+          this.barrier[x+y*xdim] = false;
+        }
       }
     }
+
     // Initialize array of partially transparant blacks, for drawing flow lines:
     const transBlackArraySize = 50;
     this.transBlackArray = new Array(transBlackArraySize);
@@ -44,19 +52,6 @@ export default class Mesh {
     for (let t = 0; t < this.nTracers; t++) {
       this.tracerX[t] = 0.0; this.tracerY[t] = 0.0;
     }
-
-    // Initialize airfoil and generate barrier points:
-    this.airfoil = new Airfoil(ctx, 0)
-    this.airfoil.calcCoords();
-    let x, y, i;
-    this.airfoil.coords.forEach( (coord) => {
-      x = Math.floor(coord[0]);
-      y = Math.floor(coord[1]);
-      i = x+y*xdim;
-      this.barrier[i] = true;
-    });
-
-    this.barrier[Math.floor(this.airfoil.centroid[0])+Math.floor(this.airfoil.centroid[1])*xdim] = true;
 
     this.setColors();
     this.initFluid();
@@ -76,22 +71,16 @@ export default class Mesh {
   }
 
   updateBarrier() {
+    this.airfoil.calcCoords();
     for (let y = 0; y < this.ydim; y++) {
       for (let x = 0; x < this.xdim; x++) {
-        this.barrier[x+y*this.xdim] = false;
+        if(pointInPolygon(x, y, this.airfoil.coords)) {
+          this.barrier[x+y*this.xdim] = true;
+        } else {
+          this.barrier[x+y*this.xdim] = false;
+        }
       }
     }
-
-    this.airfoil.calcCoords();
-    let x, y, i;
-    this.airfoil.coords.forEach( (coord) => {
-      x = Math.floor(coord[0]);
-      y = Math.floor(coord[1]);
-      i = x+y*this.xdim;
-      this.barrier[i] = true;
-    });
-
-    this.barrier[Math.floor(this.airfoil.centroid[0])+Math.floor(this.airfoil.centroid[1])*this.xdim] = true;
   }
 
   setColors() {
@@ -220,7 +209,7 @@ export default class Mesh {
 				this.rho[i] = thisrho;
 				this.ux[i] = thisux;
 				this.uy[i] = thisuy;
-
+        
 				var one9thrho = (1.0 / 9.0) * thisrho;		// pre-compute a bunch of stuff for optimization
 				var one36thrho = (1.0 / 36.0) * thisrho;
 				var ux3 = 3 * thisux;
@@ -318,21 +307,4 @@ export default class Mesh {
       this.ctx.fillRect(canvasX-1, canvasY-1, 2, 2);
     }
   }
-
-  pointInPolygon(x, y, polygon) {
-    var inside = false;
-    for(var i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-      var xi = polygon[i][0], yi = polygon[i][1];
-      var xj = polygon[j][0], yj = polygon[j][1];
-
-      var intersect = ((yi > y) != (yj > y))
-          && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-      if (intersect) inside = !inside;
-    }
-
-    return inside;
-  }
 }
-
-// bounds: [0, 200], [0,400]
-// [500, 200], [500, 400]

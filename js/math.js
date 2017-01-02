@@ -40,7 +40,7 @@ function subtract(A, B) {
 function add(A, B) {
   let out = [];
   for(let i = 0; i < A.length; i++) {
-    out.push([A[i][0] + B[0], A[i][1] + B[1]]);
+    out.push([ Math.round(A[i][0] + B[0]), Math.round(A[i][1] + B[1]) ]);
   }
 
   return out;
