@@ -57,6 +57,11 @@ export default class Mesh {
     this.initFluid();
   }
 
+  updateSize(xdim, ydim) {
+    this.xdim = xdim;
+    this.ydim = ydim;
+  }
+
   colorSquare(x, y, r, g, b) {
     let fy = this.ydim - y - 1;
     let index;
@@ -209,7 +214,7 @@ export default class Mesh {
 				this.rho[i] = thisrho;
 				this.ux[i] = thisux;
 				this.uy[i] = thisuy;
-        
+
 				var one9thrho = (1.0 / 9.0) * thisrho;		// pre-compute a bunch of stuff for optimization
 				var one36thrho = (1.0 / 36.0) * thisrho;
 				var ux3 = 3 * thisux;

@@ -7,6 +7,7 @@
   <link rel="stylesheet" type="text/css" href="./css/styling.css">
   <link href="https://fonts.googleapis.com/css?family=Lobster" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
+  <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
 
   <script type="text/javascript" src="https://ajax.microsoft.com/ajax/jQuery/jquery-1.4.2.min.js"></script>
   <script src="./js/bundle.js"></script>
@@ -60,6 +61,13 @@
 
        <div class="tracer-box">
          <div class="label-box">
+           <label class="control-label">High Resolution</label>
+         </div>
+         <input type="checkbox" id="resolution" class="tracer-check" />
+       </div>
+
+       <div class="tracer-box">
+         <div class="label-box">
            <label class="control-label">Show Tracers</label>
          </div>
          <input type="checkbox" id="tracerCheck" class="tracer-check" />
@@ -91,16 +99,62 @@
          <div id="3" class="shape">
            NACA 2412
          </div>
+       </div>
+       <div class="shapes-container">
+          <div id="4" class="shape">
+            NACA 6409
+          </div>
 
-         <div id="4" class="shape">
-           NACA 6409
-         </div>
+          <div id="5" class="shape">
+            Concave Plate
+          </div>
+
+          <div id="6" class="shape">
+            Convex Plate
+          </div>
        </div>
      </div>
    </div>
 
    <div class="button-row">
      <button id="animate" class="button">Run Simulation</button>
+     <button id="reset" class="button">Reset Canvas</button>
+   </div>
+
+   <div class="instructions-container">
+     <div class="instructions-container flow-controls">
+       <h2 class="control-header">Instructions</h2>
+       <p class="instructions">
+         Running this simulation depicts two-dimensional fluid flow over various shapes.
+         The black area/shape represents a barrier which the fluid must flow around. The fluid flow
+         is initialized from left to right, and the colors over the lime-green background indicate the curl,
+         or the local rotational motion of the fluid. The solver uses <a href="https://en.wikipedia.org/wiki/Lattice_Boltzmann_methods">Lattice Boltzmann</a>
+         which considers the fluid as a collection of particles whose motion can be modeled
+         through streaming and collisions.
+         <br>
+         <br>
+         Play around with the flow and shape controls to see what happens to the flow
+         under different conditions. Enjoy!
+       </p>
+       <h3>Control Descriptions</h3>
+       <ul class="control-descriptions">
+         <li><b>Steps:</b> number of solver steps computed per frame.</li>
+         <li><b>Flow Velocity:</b> speed of the fluid.</li>
+         <li><b>Viscosity:</b> the thickness of the fluid due to internal friction.</li>
+         <li><b>Contrast:</b> scalar factor for the color gradient.</li>
+         <li><b>High Resolution:</b> increases the resolution, but decreases simulation speed.</li>
+         <li><b>Tracers:</b> particles used to better visualize the motion of the fluid.</li>
+         <li><b>Angle:</b> angle at which the shape meets the fluid. Measured from the positive x-axis.</li>
+         <li><b>Shape:</b> black area that acts as a barrier to the fluid.</li>
+       </ul>
+     </div>
+   </div>
+
+   <div class="button-row">
+     Jonathan Slawitsky |
+     <a href="https://jslawjslaw.github.io/">Portfolio Website</a> |
+     <a href="https://www.linkedin.com/in/jonathanslawitsky">LinkedIn</a> |
+     <a href="https://github.com/jslawjslaw">GitHub</a>
    </div>
  </body>
 </html>

@@ -65,22 +65,20 @@
 	  window.contrast = 0;
 	  window.time = 0;
 	  window.running = false;
-	  window.pxPerSquare = 1;
+	  window.pxPerSquare = 2;
 	  window.shape = 1;
 	
 	  var ctx = canvas.getContext("2d");
-	  var image = ctx.createImageData(canvas.width, canvas.height); // faster than clearRect
+	  var image = ctx.createImageData(canvas.width, canvas.height);
 	  for (var i = 3; i < image.data.length; i += 4) {
 	    image.data[i] = 255; // set all alpha values to opaque
 	  }
 	
-	  var mesh = new _mesh2.default(ctx, Math.ceil(canvas.width / window.pxPerSquare), Math.ceil(canvas.height / window.pxPerSquare), image);
+	  window.mesh = new _mesh2.default(ctx, canvas.width / window.pxPerSquare, canvas.height / window.pxPerSquare, image);
 	
-	  $("#animate").click(function () {
-	    return animate(mesh);
-	  });
+	  $("#animate").click(animate);
 	  $("#angleSlider").change(function (e) {
-	    return updateAngle(e, mesh);
+	    return updateAngle(e);
 	  });
 	  $("#stepSlider").change(function (e) {
 	    return resetTimer(e);
@@ -92,41 +90,47 @@
 	    return adjustViscosity(e);
 	  });
 	  $("#contrastSlider").change(function (e) {
-	    return adjustContrast(e, mesh);
+	    return adjustContrast(e);
 	  });
 	  $("#tracerCheck").change(function (e) {
-	    return initTracers(e, mesh);
+	    return initTracers(e);
 	  });
 	  $(".shape").click(function (e) {
-	    return selectShape(e, mesh);
+	    return selectShape(e);
+	  });
+	  $("#resolution").change(function (e) {
+	    return adjustResolution(e, image, ctx);
+	  });
+	  $("#reset").click(function (e) {
+	    return resetCanvas(ctx, image);
 	  });
 	});
 	
-	function animate(mesh) {
+	function animate() {
 	  window.running = !window.running;
 	  if (window.running) {
 	    $("#animate").html("Pause");
 	    reset();
-	    simulate(mesh);
+	    simulate();
 	  } else {
 	    $("#animate").html("Run Simulation");
 	  }
 	}
 	
-	function updateAngle(e, mesh) {
+	function updateAngle(e) {
 	  $("#angleValue").val(e.currentTarget.value);
-	  mesh.airfoil.updateAngle(parseInt(e.currentTarget.value));
-	  mesh.updateBarrier();
-	  mesh.paintCanvas();
+	  window.mesh.airfoil.updateAngle(parseInt(e.currentTarget.value));
+	  window.mesh.updateBarrier();
+	  window.mesh.paintCanvas();
 	}
 	
-	function selectShape(e, mesh) {
+	function selectShape(e) {
 	  $("#" + window.shape).removeClass("selectedShape");
 	  window.shape = Number(e.currentTarget.id);
 	  $("#" + e.currentTarget.id).addClass("selectedShape"); // change css here
-	  mesh.airfoil.changeShape();
-	  mesh.updateBarrier();
-	  mesh.paintCanvas();
+	  window.mesh.airfoil.changeShape();
+	  window.mesh.updateBarrier();
+	  window.mesh.paintCanvas();
 	}
 	
 	function adjustSpeed(e) {
@@ -150,63 +154,87 @@
 	  reset();
 	}
 	
-	function adjustContrast(e, mesh) {
+	function adjustContrast(e) {
 	  $("#contrastValue").val(e.currentTarget.value);
 	  window.contrast = Number(e.currentTarget.value);
-	  mesh.paintCanvas();
+	  window.mesh.paintCanvas();
 	}
 	
-	function initTracers(e, mesh) {
+	function adjustResolution(e, image, ctx) {
+	  if (window.running) {
+	    window.running = !window.running;
+	    $("#animate").html("Run Simulation");
+	  }
+	
 	  if (e.currentTarget.checked) {
-	    var nRows = Math.ceil(Math.sqrt(mesh.nTracers));
-	    var dx = mesh.xdim / nRows;
-	    var dy = mesh.ydim / nRows;
+	    window.pxPerSquare = 1;
+	  } else {
+	    window.pxPerSquare = 2;
+	  }
+	
+	  resetCanvas(ctx, image);
+	}
+	
+	function resetCanvas(ctx, image) {
+	  window.running = false;
+	  $("#tracerCheck").attr('checked', false);
+	  $("#animate").html("Run Simulation");
+	
+	  window.mesh = new _mesh2.default(ctx, 500 / window.pxPerSquare, 200 / window.pxPerSquare, image);
+	  window.mesh.paintCanvas();
+	}
+	
+	function initTracers(e) {
+	  if (e.currentTarget.checked) {
+	    var nRows = Math.ceil(Math.sqrt(window.mesh.nTracers));
+	    var dx = window.mesh.xdim / nRows;
+	    var dy = window.mesh.ydim / nRows;
 	    var nextX = dx / 2;
 	    var nextY = dy / 2;
-	    for (var t = 0; t < mesh.nTracers; t++) {
-	      mesh.tracerX[t] = nextX;
-	      mesh.tracerY[t] = nextY;
+	    for (var t = 0; t < window.mesh.nTracers; t++) {
+	      window.mesh.tracerX[t] = nextX;
+	      window.mesh.tracerY[t] = nextY;
 	      nextX += dx;
-	      if (nextX > mesh.xdim) {
+	      if (nextX > window.mesh.xdim) {
 	        nextX = dx / 2;
 	        nextY += dy;
 	      }
 	    }
 	  }
-	  mesh.paintCanvas();
+	  window.mesh.paintCanvas();
 	}
 	
-	function simulate(mesh) {
+	function simulate() {
 	  var stepsPerFrame = Number(window.steps); // number of simulation steps per animation frame
-	  mesh.setBoundaries();
+	  window.mesh.setBoundaries();
 	
 	  // Execute a bunch of time steps:
 	  for (var step = 0; step < stepsPerFrame; step++) {
-	    mesh.collide();
-	    mesh.stream();
-	    if ($("#tracerCheck")[0].checked) mesh.moveTracers();
+	    window.mesh.collide();
+	    window.mesh.stream();
+	    if ($("#tracerCheck")[0].checked) window.mesh.moveTracers();
 	    window.time++;
 	  }
 	
-	  mesh.paintCanvas();
+	  window.mesh.paintCanvas();
 	
 	  if (window.running) {
 	    window.stepCount += stepsPerFrame;
 	    window.setTimeout(function () {
-	      return simulate(mesh);
+	      return simulate(window.mesh);
 	    }, 1);
 	  }
 	
 	  var stable = true;
-	  for (var x = 0; x < mesh.xdim; x++) {
-	    var index = x + mesh.ydim / 2 * mesh.xdim; // look at middle row only
-	    if (mesh.rho[index] <= 0) stable = false;
+	  for (var x = 0; x < window.mesh.xdim; x++) {
+	    var index = x + window.mesh.ydim / 2 * window.mesh.xdim; // look at middle row only
+	    if (window.mesh.rho[index] <= 0) stable = false;
 	  }
 	
 	  if (!stable) {
 	    window.alert("The simulation has become unstable due to excessive fluid speeds.");
-	    animate(mesh);
-	    mesh.initFluid();
+	    animate();
+	    window.mesh.initFluid();
 	  }
 	}
 
@@ -226,7 +254,7 @@
 	
 	var _airfoil2 = _interopRequireDefault(_airfoil);
 	
-	var _selectors = __webpack_require__(8);
+	var _selectors = __webpack_require__(10);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -291,6 +319,12 @@
 	  }
 	
 	  _createClass(Mesh, [{
+	    key: 'updateSize',
+	    value: function updateSize(xdim, ydim) {
+	      this.xdim = xdim;
+	      this.ydim = ydim;
+	    }
+	  }, {
 	    key: 'colorSquare',
 	    value: function colorSquare(x, y, r, g, b) {
 	      var fy = this.ydim - y - 1;
@@ -605,7 +639,15 @@
 	
 	var _vertical_plate2 = _interopRequireDefault(_vertical_plate);
 	
-	var _math = __webpack_require__(7);
+	var _concave = __webpack_require__(7);
+	
+	var _concave2 = _interopRequireDefault(_concave);
+	
+	var _convex = __webpack_require__(8);
+	
+	var _convex2 = _interopRequireDefault(_convex);
+	
+	var _math = __webpack_require__(9);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -619,7 +661,7 @@
 	
 	    this.ctx = ctx;
 	    this.aAttack = (0, _math.degToRads)(aAttack);
-	    this.shape = _vertical_plate2.default;
+	    this.changeShape();
 	  }
 	
 	  _createClass(Airfoil, [{
@@ -630,8 +672,13 @@
 	      var x_sum = 0;
 	      var y_sum = 0;
 	      this.coords = this.shape.map(function (point) {
-	        var x_coor = Math.round(150 * (point[0] + 1) - 70);
-	        var y_coor = Math.round(150 * (point[1] + 1) - 50);
+	        var x_coor = void 0;
+	        if (_this.shape === _convex2.default) {
+	          x_coor = Math.round((150 * (point[0] + 1) - 50) / window.pxPerSquare);
+	        } else {
+	          x_coor = Math.round((150 * (point[0] + 1) - 70) / window.pxPerSquare);
+	        }
+	        var y_coor = Math.round((150 * (point[1] + 1) - 50) / window.pxPerSquare);
 	        x_sum += x_coor;
 	        y_sum += y_coor;
 	
@@ -666,6 +713,12 @@
 	          break;
 	        case 4:
 	          this.shape = _NACA6.default;
+	          break;
+	        case 5:
+	          this.shape = _concave2.default;
+	          break;
+	        case 6:
+	          this.shape = _convex2.default;
 	          break;
 	        default:
 	          this.shape = _vertical_plate2.default;
@@ -721,6 +774,52 @@
 
 /***/ },
 /* 7 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var _convex = __webpack_require__(8);
+	
+	var _convex2 = _interopRequireDefault(_convex);
+	
+	var _math = __webpack_require__(9);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	var concave = _convex2.default.map(function (point) {
+	  return (0, _math.multiply)((0, _math.rotation)((0, _math.degToRads)(180)), point);
+	});
+	
+	module.exports = concave;
+
+/***/ },
+/* 8 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	var convex = [];
+	
+	for (var x = 0.25; x > 0; x -= 0.01) {
+	  convex.push([x, -Math.sqrt(x - 2 * Math.pow(x, 2) / 2)]);
+	}
+	
+	for (var _x = 0; _x < 0.25; _x += 0.01) {
+	  convex.push([_x, Math.sqrt(_x - 2 * Math.pow(_x, 2) / 2)]);
+	}
+	
+	for (var k = 0.25; k > 0.05; k -= 0.005) {
+	  convex.push([k, 1 / 20 * Math.sqrt(-200 * Math.pow(k, 2) + 240 * k - 11)]);
+	}
+	
+	for (var _k = 0.05; _k < 0.25; _k += 0.005) {
+	  convex.push([_k, -(1 / 20) * Math.sqrt(-200 * Math.pow(_k, 2) + 240 * _k - 11)]);
+	}
+	
+	module.exports = convex;
+
+/***/ },
+/* 9 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -784,7 +883,7 @@
 	exports.degToRads = degToRads;
 
 /***/ },
-/* 8 */
+/* 10 */
 /***/ function(module, exports) {
 
 	"use strict";

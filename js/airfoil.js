@@ -2,21 +2,28 @@ import NACA0008 from './airfoils/NACA0008';
 import NACA2412 from './airfoils/NACA2412';
 import NACA6409 from './airfoils/NACA6409';
 import plate from './airfoils/vertical_plate';
+import concave from './airfoils/concave';
+import convex from './airfoils/convex';
 import { rotation, multiply, subtract, add, degToRads } from './math';
 
 export default class Airfoil {
   constructor(ctx, aAttack = 0) {
     this.ctx = ctx;
     this.aAttack = degToRads(aAttack);
-    this.shape = plate;
+    this.changeShape();
   }
 
   calcCoords() {
     let x_sum = 0;
     let y_sum = 0;
     this.coords = this.shape.map( (point) => {
-      const x_coor = Math.round(150*(point[0]+1)-70);
-      const y_coor = Math.round(150*(point[1]+1)-50);
+      let x_coor;
+      if (this.shape === convex) {
+        x_coor = Math.round((150*(point[0]+1)-50)/window.pxPerSquare);
+      } else {
+        x_coor = Math.round((150*(point[0]+1)-70)/window.pxPerSquare);
+      }
+      const y_coor = Math.round((150*(point[1]+1)-50)/window.pxPerSquare);
       x_sum += x_coor;
       y_sum += y_coor;
 
@@ -48,7 +55,13 @@ export default class Airfoil {
         this.shape = NACA2412;
         break;
       case 4:
-        this.shape = NACA6409
+        this.shape = NACA6409;
+        break;
+      case 5:
+        this.shape = concave;
+        break;
+      case 6:
+        this.shape = convex;
         break;
       default:
         this.shape = plate;

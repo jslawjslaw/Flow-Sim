@@ -13,52 +13,54 @@ $( () => {
   window.contrast = 0;
   window.time = 0;
   window.running = false;
-  window.pxPerSquare = 1;
+  window.pxPerSquare = 2;
   window.shape = 1;
 
   const ctx = canvas.getContext("2d");
-  const image = ctx.createImageData(canvas.width, canvas.height);	// faster than clearRect
+  let image = ctx.createImageData(canvas.width, canvas.height);
   for (let i = 3; i < image.data.length; i += 4) {
     image.data[i] = 255;			// set all alpha values to opaque
   }
 
-  const mesh = new Mesh(ctx, Math.ceil(canvas.width/window.pxPerSquare), Math.ceil(canvas.height/window.pxPerSquare), image)
+  window.mesh = new Mesh(ctx, canvas.width/window.pxPerSquare, canvas.height/window.pxPerSquare, image);
 
-  $("#animate").click(() => animate(mesh));
-  $("#angleSlider").change((e) => updateAngle(e, mesh));
+  $("#animate").click(animate);
+  $("#angleSlider").change((e) => updateAngle(e));
   $("#stepSlider").change((e) => resetTimer(e));
   $("#speedSlider").change((e) => adjustSpeed(e));
   $("#viscSlider").change((e) => adjustViscosity(e));
-  $("#contrastSlider").change((e) => adjustContrast(e, mesh));
-  $("#tracerCheck").change((e) => initTracers(e, mesh));
-  $(".shape").click((e) => selectShape(e, mesh));
+  $("#contrastSlider").change((e) => adjustContrast(e));
+  $("#tracerCheck").change((e) => initTracers(e));
+  $(".shape").click((e) => selectShape(e));
+  $("#resolution").change((e) => adjustResolution(e, image, ctx));
+  $("#reset").click((e) => resetCanvas(ctx, image));
 });
 
-function animate(mesh) {
+function animate() {
   window.running = !window.running;
   if (window.running) {
     $("#animate").html("Pause");
     reset();
-    simulate(mesh);
+    simulate();
   } else {
     $("#animate").html("Run Simulation");
   }
 }
 
-function updateAngle(e, mesh) {
+function updateAngle(e) {
   $("#angleValue").val(e.currentTarget.value);
-  mesh.airfoil.updateAngle(parseInt(e.currentTarget.value));
-  mesh.updateBarrier();
-  mesh.paintCanvas();
+  window.mesh.airfoil.updateAngle(parseInt(e.currentTarget.value));
+  window.mesh.updateBarrier();
+  window.mesh.paintCanvas();
 }
 
-function selectShape(e, mesh) {
+function selectShape(e) {
   $(`#${window.shape}`).removeClass("selectedShape")
   window.shape = Number(e.currentTarget.id);
   $(`#${e.currentTarget.id}`).addClass("selectedShape"); // change css here
-  mesh.airfoil.changeShape();
-  mesh.updateBarrier();
-  mesh.paintCanvas();
+  window.mesh.airfoil.changeShape();
+  window.mesh.updateBarrier();
+  window.mesh.paintCanvas();
 }
 
 function adjustSpeed(e) {
@@ -82,60 +84,84 @@ function resetTimer(e) {
   reset();
 }
 
-function adjustContrast(e, mesh) {
+function adjustContrast(e) {
   $("#contrastValue").val(e.currentTarget.value);
   window.contrast = Number(e.currentTarget.value);
-  mesh.paintCanvas();
+  window.mesh.paintCanvas();
 }
 
-function initTracers(e, mesh) {
+function adjustResolution(e, image, ctx) {
+  if (window.running) {
+    window.running = !window.running;
+    $("#animate").html("Run Simulation");
+  }
+
   if (e.currentTarget.checked) {
-    let nRows = Math.ceil(Math.sqrt(mesh.nTracers));
-    let dx = mesh.xdim / nRows;
-    let dy = mesh.ydim / nRows;
+    window.pxPerSquare = 1;
+  } else {
+    window.pxPerSquare = 2;
+  }
+
+  resetCanvas(ctx, image);
+}
+
+function resetCanvas(ctx, image) {
+  window.running = false;
+  $("#tracerCheck").attr('checked', false);
+  $("#animate").html("Run Simulation");
+
+  window.mesh = new Mesh(ctx, 500/window.pxPerSquare, 200/window.pxPerSquare, image);
+  window.mesh.paintCanvas();
+}
+
+function initTracers(e) {
+  if (e.currentTarget.checked) {
+    let nRows = Math.ceil(Math.sqrt(window.mesh.nTracers));
+    let dx = window.mesh.xdim / nRows;
+    let dy = window.mesh.ydim / nRows;
     let nextX = dx / 2;
     let nextY = dy / 2;
-    for (let t = 0; t < mesh.nTracers; t++) {
-      mesh.tracerX[t] = nextX;
-      mesh.tracerY[t] = nextY;
+    for (let t = 0; t < window.mesh.nTracers; t++) {
+      window.mesh.tracerX[t] = nextX;
+      window.mesh.tracerY[t] = nextY;
       nextX += dx;
-      if (nextX > mesh.xdim) {
+      if (nextX > window.mesh.xdim) {
         nextX = dx / 2;
         nextY += dy;
       }
     }
   }
-  mesh.paintCanvas();
+  window.mesh.paintCanvas();
 }
 
-function simulate(mesh) {
+function simulate() {
   let stepsPerFrame = Number(window.steps);			// number of simulation steps per animation frame
-  mesh.setBoundaries();
+  window.mesh.setBoundaries();
 
   // Execute a bunch of time steps:
   for (let step = 0; step < stepsPerFrame; step++) {
-    mesh.collide();
-    mesh.stream();
-    if ($("#tracerCheck")[0].checked) mesh.moveTracers();
+    window.mesh.collide();
+    window.mesh.stream();
+    if ($("#tracerCheck")[0].checked) window.mesh.moveTracers();
     window.time++;
   }
 
-  mesh.paintCanvas();
+  window.mesh.paintCanvas();
 
   if (window.running) {
     window.stepCount += stepsPerFrame;
-    window.setTimeout(() => simulate(mesh), 1);
+    window.setTimeout(() => simulate(window.mesh), 1);
   }
 
   let stable = true;
-  for (let x = 0; x < mesh.xdim; x++) {
-    var index = x + (mesh.ydim/2)*mesh.xdim;	// look at middle row only
-    if (mesh.rho[index] <= 0) stable = false;
+  for (let x = 0; x < window.mesh.xdim; x++) {
+    var index = x + (window.mesh.ydim/2)*window.mesh.xdim;	// look at middle row only
+    if (window.mesh.rho[index] <= 0) stable = false;
   }
 
   if (!stable) {
     window.alert("The simulation has become unstable due to excessive fluid speeds.");
-    animate(mesh);
-    mesh.initFluid();
+    animate();
+    window.mesh.initFluid();
   }
 }

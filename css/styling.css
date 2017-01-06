@@ -131,6 +131,8 @@
 
 .button-row {
   text-align: center;
+  margin-bottom: 20px;
+  font-family: 'Raleway', sans-serif;
 }
 
 .button {
@@ -155,8 +157,9 @@
 }
 
 .shape {
-  width: 60px;
-  padding-top: 10px;
+  width: 70px;
+  height: 40px;
+  padding-top: 20px;
   padding-bottom: 10px;
   margin: 10px auto;
   background-color: #3071a9;
@@ -174,4 +177,30 @@
 
 .selectedShape {
   background-color: #3047ab;
+}
+
+.instructions {
+  font-family: 'Raleway', sans-serif;
+  font-size: 16px;
+  margin-left: 3px;
+}
+
+.control-descriptions {
+  list-style: none;
+  padding-left: 20px;
+  font-family: 'Raleway', sans-serif;
+  font-size: 16px;
+}
+
+li {
+  margin-bottom: 7px;
+}
+
+h3 {
+  font-family: 'Lobster', cursive;
+  font-size: 18px;
+}
+
+.instructions-container {
+  margin: 0 auto 0 auto;
 }
