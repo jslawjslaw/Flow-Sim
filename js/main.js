@@ -39,6 +39,9 @@ $( () => {
 function animate() {
   window.running = !window.running;
   if (window.running) {
+    if ($("#error").attr("class") === "error-show") {
+      $("#error").removeClass("error-show").addClass("error");
+    }
     $("#animate").html("Pause");
     reset();
     simulate();
@@ -150,7 +153,7 @@ function simulate() {
 
   if (window.running) {
     window.stepCount += stepsPerFrame;
-    window.setTimeout(() => simulate(window.mesh), 1);
+    window.setTimeout(() => simulate(), 1);
   }
 
   let stable = true;
@@ -160,7 +163,7 @@ function simulate() {
   }
 
   if (!stable) {
-    window.alert("The simulation has become unstable due to excessive fluid speeds.");
+    $("#error").addClass("error-show").removeClass("error");
     animate();
     window.mesh.initFluid();
   }

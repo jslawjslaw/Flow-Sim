@@ -21,6 +21,10 @@
      <canvas id="canvas" class="root"></canvas>
    </div>
 
+   <div id="error" class="error">
+     The simulation has become unstable due to excessive fluid speeds.
+   </div>
+
    <div class="controls-container">
      <div class="flow-controls">
        <h2 class="control-header">Flow Controls</h2>
@@ -116,13 +120,13 @@
      </div>
    </div>
 
-   <div class="button-row">
-     <button id="animate" class="button">Run Simulation</button>
-     <button id="reset" class="button">Reset Canvas</button>
+   <div class="button-row group">
+     <a id="animate" href="#" class="button left">Run Simulation</a>
+     <a id="reset" href="#" class="button right">Reset Canvas</a>
    </div>
 
    <div class="instructions-container">
-     <div class="instructions-container flow-controls">
+     <div class="instructions-container instructions-flow-controls">
        <h2 class="control-header">Instructions</h2>
        <p class="instructions">
          Running this simulation depicts two-dimensional fluid flow over various shapes.
@@ -150,11 +154,10 @@
      </div>
    </div>
 
-   <div class="button-row">
-     Jonathan Slawitsky |
-     <a href="https://jslawjslaw.github.io/">Portfolio Website</a> |
-     <a href="https://www.linkedin.com/in/jonathanslawitsky">LinkedIn</a> |
-     <a href="https://github.com/jslawjslaw">GitHub</a>
+   <div class="button-row2">
+     <a href="https://jslawjslaw.github.io/" class="a">Jonathan Slawitsky</a> |
+     <a href="https://www.linkedin.com/in/jonathanslawitsky" class="a"><img class="img" src="img/linkedin.png">LinkedIn</a> |
+     <a href="https://github.com/jslawjslaw" class="a"><img class="img" src="img/github.png">GitHub</a>
    </div>
  </body>
 </html>
