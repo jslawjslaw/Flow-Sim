@@ -1,6 +1,10 @@
 # Flow Sim
 
+[Flow Sim Live][http://jslawjslaw.github.io/Flow-Sim/]
+
 Flow Sim is a web application built on Javascript and Canvas that allows for visualization of fluid flow over an airfoil. It allows you to adjust the flow as well as the shape.
+
+![Screenshot](https://github.com/jslawjslaw/Flow-Sim/blob/gh-pages/img/screenshot.png)
 
 ## Features
 
